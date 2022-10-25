@@ -1,0 +1,127 @@
+name: windows
+
+on:
+  pull_request:
+    paths-ignore:
+      - '*.md'
+      - '**/*.md'
+      - 'LICENSE*'
+      - 'examples/**'
+      - 'nerves/**'
+      - 'Makefile'
+      - 'cc_toolchain/**'
+      - 'checksum-evision.exs'
+      - '.github/FUNDING.yml'
+      - '.github/workflows/nerves-*.yml'
+      - '.github/workflows/linux-*.yml'
+      - '.github/workflows/macos-*.yml'
+      - '.github/workflows/test-*.yml'
+      - '.github/workflows/windows-precompile.yml'
+  push:
+    branches:
+      - main
+      - test-*
+    paths-ignore:
+      - '*.md'
+      - '**/*.md'
+      - 'LICENSE*'
+      - 'examples/**'
+      - 'nerves/**'
+      - 'Makefile'
+      - 'cc_toolchain/**'
+      - 'checksum-evision.exs'
+      - '.github/FUNDING.yml'
+      - '.github/workflows/nerves-*.yml'
+      - '.github/workflows/linux-*.yml'
+      - '.github/workflows/macos-*.yml'
+      - '.github/workflows/test-*.yml'
+      - '.github/workflows/windows-precompile.yml'
+
+concurrency:
+  group: ${{ github.workflow }}
+  cancel-in-progress: true
+
+jobs:
+  mix_test:
+    runs-on: windows-latest
+    env:
+      MIX_ENV: test
+      OPENCV_VER: "4.6.0"
+      OTP_VERSION: "25.0.4"
+      ELIXIR_VERSION: "1.14.0"
+      EVISION_PREFER_PRECOMPILED: "false"
+      MAKE: "nmake"
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - uses: erlef/setup-beam@v1
+        with:
+          otp-version: ${{ env.OTP_VERSION }}
+          elixir-version: ${{ env.ELIXIR_VERSION }}
+
+      - uses: ilammy/msvc-dev-cmd@v1
+        with:
+          arch: amd64_arm64
+
+      - name: clone evision
+        shell: bash
+        run: |
+          git clone https://github.com/cocoa-xu/evision
+
+      - name: Cache mix packages
+        id: cache-mix-deps
+        uses: actions/cache@v3
+        with:
+          key: deps-${{ hashFiles('mix.lock') }}-${{ env.OTP_VERSION }}-${{ env.ELIXIR_VERSION }}
+          path: |
+            ./evision/deps
+
+      - name: Get mix deps
+        if: steps.cache-mix-deps.outputs.cache-hit != 'true'
+        shell: bash
+        run: |
+          cd evision
+          mix deps.get
+
+      - name: Cache OpenCV
+        id: cache-opencv
+        uses: actions/cache@v3
+        with:
+          key: opencv-${{ env.OPENCV_VER }}
+          path: |
+            ./evision/3rd_party
+
+      - name: Download OpenCV
+        if: steps.cache-opencv.outputs.cache-hit != 'true'
+        shell: bash
+        run: |
+          cd evision
+          bash scripts/download_opencv.sh ${OPENCV_VER} 3rd_party/cache 3rd_party/opencv/
+
+      - name: Cache compiled OpenCV
+        id: cache-mix-compile
+        uses: actions/cache@v3
+        with:
+          key: compile-test-${{ runner.os }}-${{ hashFiles('cc_toolchain/**') }}-${{ hashFiles('c_src/**') }}-${{ hashFiles('py_src/**') }}-${{ hashFiles('CMakeLists.txt') }}-${{ hashFiles('Makefile.win') }}-${{ env.OPENCV_VER }}-${{ env.OTP_VERSION }}-${{ env.ELIXIR_VERSION }}
+          path: |
+            ./evision/_build
+            ./evision/c_src/headers.txt
+            ./evision/c_src/configuration.private.hpp
+            ./evision/lib
+            ./evision/src
+
+      - name: Mix Compile
+        if: steps.cache-mix-compile.outputs.cache-hit != 'true'
+        shell: bash
+        run: |
+          cd evision
+          rm -f Makefile
+          rm -f "_build/${MIX_ENV}/lib/evision/priv/evision.dll"
+          mix compile
+
+      - name: Mix Test
+        shell: bash
+        run: |
+          rm -rf _build/test/lib/castore
+          mix test --include require_downloading --include require_ffmpeg
