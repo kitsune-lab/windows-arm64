@@ -67,7 +67,7 @@ jobs:
       - name: clone evision
         shell: bash
         run: |
-          git clone https://github.com/cocoa-xu/evision
+          git clone -b windows-arm64 https://github.com/cocoa-xu/evision
 
       - name: Cache mix packages
         id: cache-mix-deps
@@ -116,6 +116,13 @@ jobs:
         shell: bash
         run: |
           cd evision
+          export CMAKE_OPENCV_OPTIONS="-D WITH_FFMPEG=OFF"
+          export CMAKE_GENERATE_TYPE="Visual Studio 17"
+          export MSBUILD_PLATFORM="ARM64"
+          if [ -n "${{ matrix.pair.CMAKE_TOOLCHAIN_FILE }}" ]; then
+            export CMAKE_TOOLCHAIN_FILE="$(pwd)/cc_toolchain/aarch64-windows-msvc.cmake"
+            export TOOLCHAIN_FILE="$(pwd)/cc_toolchain/aarch64-windows-msvc.cmake"
+          fi
           rm -f Makefile
           rm -f "_build/${MIX_ENV}/lib/evision/priv/evision.dll"
           mix compile
@@ -124,4 +131,4 @@ jobs:
         shell: bash
         run: |
           rm -rf _build/test/lib/castore
-          mix test --include require_downloading --include require_ffmpeg
+          mix test --include require_downloading
