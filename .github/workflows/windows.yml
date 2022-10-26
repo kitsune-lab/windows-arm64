@@ -68,7 +68,7 @@ jobs:
       - name: clone evision
         shell: bash
         run: |
-          git clone -b windows-arm64 https://github.com/cocoa-xu/evision
+          git clone https://github.com/cocoa-xu/evision
 
       - name: Cache mix packages
         id: cache-mix-deps
