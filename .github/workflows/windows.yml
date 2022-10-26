@@ -117,7 +117,7 @@ jobs:
         run: |
           cd evision
           export CMAKE_OPENCV_OPTIONS="-D WITH_FFMPEG=OFF"
-          export CMAKE_GENERATE_TYPE="Visual Studio 17"
+          export CMAKE_GENERATOR_TYPE="Visual Studio 17"
           export MSBUILD_PLATFORM="ARM64"
           export CMAKE_TOOLCHAIN_FILE="$(pwd)/cc_toolchain/aarch64-windows-msvc.cmake"
           export TOOLCHAIN_FILE="$(pwd)/cc_toolchain/aarch64-windows-msvc.cmake"
