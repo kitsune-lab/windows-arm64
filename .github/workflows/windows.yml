@@ -45,13 +45,14 @@ jobs:
   mix_test:
     runs-on: windows-latest
     env:
-      MIX_ENV: test
+      MIX_ENV: prod
       OPENCV_VER: "4.6.0"
       OTP_VERSION: "25.0.4"
       ELIXIR_VERSION: "1.14.0"
       EVISION_PREFER_PRECOMPILED: "false"
       MAKE: "nmake"
-
+      NIF_VERSION: "2.16"
+      EVISION_GENERATE_LANG: "erlang,elixir"
     steps:
       - uses: actions/checkout@v3
 
@@ -125,8 +126,21 @@ jobs:
           rm -f "_build/${MIX_ENV}/lib/evision/priv/evision.dll"
           mix compile
 
-      - name: Mix Test
+      - name: Create precompiled library
         shell: bash
         run: |
-          rm -rf _build/test/lib/castore
-          mix test --include require_downloading
+          export PKG_NAME=evision-nif_${NIF_VERSION}-aarch64-windows-msvc-0.1.14
+          mkdir -p "${PKG_NAME}"
+          rm -rf "_build/${MIX_ENV}/lib/evision/priv/ARM64"
+          cp -a _build/${MIX_ENV}/lib/evision/priv "${PKG_NAME}"
+          cp -a lib/generated "${PKG_NAME}/elixir_generated"
+          cp -a src/generated "${PKG_NAME}/erlang_generated"
+          tar -czf "${PKG_NAME}.tar.gz" "${PKG_NAME}"
+          rm -rf "${PKG_NAME}"
+          ls -lah "${PKG_NAME}.tar.gz"
+          mkdir -p artifacts
+          mv "${PKG_NAME}.tar.gz" artifacts
+
+      - uses: softprops/action-gh-release@v1
+        with:
+          files: artifacts/*.tar.gz
