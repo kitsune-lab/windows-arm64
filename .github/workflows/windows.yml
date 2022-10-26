@@ -97,7 +97,7 @@ jobs:
         shell: bash
         run: |
           cd evision
-          bash scripts/download_opencv.sh ${OPENCV_VER} 3rd_party/cache 3rd_party/opencv/
+          bash scripts/download_opencv.sh ${OPENCV_VER} 3rd_party/cache 3rd_party/opencv/ >/dev/null
 
       - name: Cache compiled OpenCV
         id: cache-mix-compile
