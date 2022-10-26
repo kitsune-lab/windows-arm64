@@ -119,10 +119,8 @@ jobs:
           export CMAKE_OPENCV_OPTIONS="-D WITH_FFMPEG=OFF"
           export CMAKE_GENERATE_TYPE="Visual Studio 17"
           export MSBUILD_PLATFORM="ARM64"
-          if [ -n "${{ matrix.pair.CMAKE_TOOLCHAIN_FILE }}" ]; then
-            export CMAKE_TOOLCHAIN_FILE="$(pwd)/cc_toolchain/aarch64-windows-msvc.cmake"
-            export TOOLCHAIN_FILE="$(pwd)/cc_toolchain/aarch64-windows-msvc.cmake"
-          fi
+          export CMAKE_TOOLCHAIN_FILE="$(pwd)/cc_toolchain/aarch64-windows-msvc.cmake"
+          export TOOLCHAIN_FILE="$(pwd)/cc_toolchain/aarch64-windows-msvc.cmake"
           rm -f Makefile
           rm -f "_build/${MIX_ENV}/lib/evision/priv/evision.dll"
           mix compile
